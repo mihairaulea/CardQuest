@@ -7,7 +7,7 @@ package view.game
 
 	public class CardManager extends Sprite
 	{
-		private var numberOfCards:int = 16;
+		private var numberOfCards:int = 24;
 		
 		private var flippedCardsArray:Array;
 		private var cardPool:CardPool;
@@ -40,7 +40,7 @@ package view.game
 				
 				col ++;
 				
-				if (col / 4 == 1)
+				if (col / 6 == 1)
 				{
 					col = 0;
 					row++;

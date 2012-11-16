@@ -24,27 +24,26 @@
  */
 package feathers.controls.text
 {
+	import feathers.core.FeathersControl;
+	import feathers.core.ITextRenderer;
+
 	import flash.display.BitmapData;
 	import flash.display3D.textures.Texture;
 	import flash.geom.Matrix;
 	import flash.geom.Point;
 	import flash.geom.Rectangle;
 	import flash.text.AntiAliasType;
-	import flash.text.GridFitType;
 	import flash.text.TextField;
 	import flash.text.TextFieldAutoSize;
 	import flash.text.TextFormat;
 
-	import feathers.core.FeathersControl;
-	import feathers.core.ITextRenderer;
-
 	import starling.core.RenderSupport;
-
 	import starling.core.Starling;
 	import starling.display.Image;
 	import starling.events.Event;
 	import starling.textures.ConcreteTexture;
 	import starling.textures.Texture;
+	import starling.utils.getNextPowerOfTwo;
 
 	/**
 	 * Renders text with a native <code>flash.text.TextField</code>.
@@ -69,6 +68,7 @@ package feathers.controls.text
 		public function TextFieldTextRenderer()
 		{
 			this.isQuickHitAreaEnabled = true;
+			this.addEventListener(Event.ADDED_TO_STAGE, addedToStageHandler);
 			this.addEventListener(Event.REMOVED_FROM_STAGE, removedFromStageHandler);
 		}
 
@@ -90,7 +90,27 @@ package feathers.controls.text
 		/**
 		 * @private
 		 */
-		private var _text:String = "";
+		protected var _snapshotWidth:int = 0;
+
+		/**
+		 * @private
+		 */
+		protected var _snapshotHeight:int = 0;
+
+		/**
+		 * @private
+		 */
+		protected var _needsNewBitmap:Boolean = false;
+
+		/**
+		 * @private
+		 */
+		protected var _frameCount:int = 0;
+
+		/**
+		 * @private
+		 */
+		protected var _text:String = "";
 
 		/**
 		 * @inheritDoc
@@ -105,6 +125,10 @@ package feathers.controls.text
 		 */
 		public function set text(value:String):void
 		{
+			if(!value)
+			{
+				value = "";
+			}
 			if(this._text == value)
 			{
 				return;
@@ -150,7 +174,7 @@ package feathers.controls.text
 		/**
 		 * @private
 		 */
-		private var _embedFonts:Boolean = false;
+		protected var _embedFonts:Boolean = false;
 
 		/**
 		 * Determines if the TextField should use an embedded font or not.
@@ -176,7 +200,7 @@ package feathers.controls.text
 		/**
 		 * @private
 		 */
-		private var _wordWrap:Boolean = false;
+		protected var _wordWrap:Boolean = false;
 
 		/**
 		 * Determines if the TextField wraps text to the next line.
@@ -202,7 +226,7 @@ package feathers.controls.text
 		/**
 		 * @private
 		 */
-		private var _isHTML:Boolean = false;
+		protected var _isHTML:Boolean = false;
 
 		/**
 		 * Determines if the TextField should display the text as HTML or not.
@@ -228,7 +252,7 @@ package feathers.controls.text
 		/**
 		 * @private
 		 */
-		private var _snapToPixels:Boolean = true;
+		protected var _snapToPixels:Boolean = true;
 
 		/**
 		 * Determines if the text should be snapped to the nearest whole pixel
@@ -316,6 +340,7 @@ package feathers.controls.text
 				this._textField = new TextField();
 				this._textField.mouseEnabled = this._textField.mouseWheelEnabled = false;
 				this._textField.selectable = false;
+				this._textField.antiAliasType = AntiAliasType.ADVANCED;
 			}
 		}
 
@@ -341,8 +366,14 @@ package feathers.controls.text
 			const stylesInvalid:Boolean = this.isInvalid(INVALIDATION_FLAG_STYLES);
 			const dataInvalid:Boolean = this.isInvalid(INVALIDATION_FLAG_DATA);
 
-			if(dataInvalid)
+			if(dataInvalid || stylesInvalid)
 			{
+				this._textField.wordWrap = this._wordWrap;
+				this._textField.embedFonts = this._embedFonts;
+				if(this._textFormat)
+				{
+					this._textField.defaultTextFormat = this._textFormat;
+				}
 				if(this._isHTML)
 				{
 					this._textField.htmlText = this._text;
@@ -350,16 +381,6 @@ package feathers.controls.text
 				else
 				{
 					this._textField.text = this._text;
-				}
-			}
-
-			if(dataInvalid || stylesInvalid)
-			{
-				this._textField.wordWrap = this._wordWrap;
-				this._textField.embedFonts = this._embedFonts;
-				if(this._textFormat)
-				{
-					this._textField.setTextFormat(this._textFormat);
 				}
 			}
 		}
@@ -396,6 +417,11 @@ package feathers.controls.text
 
 			this._textField.autoSize = TextFieldAutoSize.NONE;
 
+			//put the width and height back just in case we measured without
+			//a full validation
+			this._textField.width = this.actualWidth;
+			this._textField.height = this.actualHeight;
+
 			result.x = newWidth;
 			result.y = newHeight;
 
@@ -414,14 +440,20 @@ package feathers.controls.text
 			{
 				this._textField.width = this.actualWidth;
 				this._textField.height = this.actualHeight;
+				this._snapshotWidth = getNextPowerOfTwo(this.actualWidth * Starling.contentScaleFactor);
+				this._snapshotHeight = getNextPowerOfTwo(this.actualHeight * Starling.contentScaleFactor);
+				this._needsNewBitmap = this._needsNewBitmap || !this._textSnapshotBitmapData || this._snapshotWidth != this._textSnapshotBitmapData.width || this._snapshotHeight != this._textSnapshotBitmapData.height;
 			}
 
-			if(stylesInvalid || dataInvalid || sizeInvalid)
+			if(stylesInvalid || dataInvalid || this._needsNewBitmap)
 			{
 				const hasText:Boolean = this._text.length > 0;
 				if(hasText)
 				{
-					this.refreshSnapshot(sizeInvalid || !this._textSnapshotBitmapData);
+					//we need to wait a frame (sometimes two!) for the TextField
+					//to render properly. yes, really.
+					this._frameCount = 0;
+					this.addEventListener(Event.ENTER_FRAME, enterFrameHandler);
 				}
 				if(this._textSnapshot)
 				{
@@ -449,26 +481,20 @@ package feathers.controls.text
 		/**
 		 * @private
 		 */
-		protected function refreshSnapshot(needsNewBitmap:Boolean):void
+		protected function refreshSnapshot():void
 		{
-			if(needsNewBitmap)
+			if(this._textField.width == 0 || this._textField.height == 0)
 			{
-				const tfWidth:Number = this._textField.width * Starling.contentScaleFactor;
-				const tfHeight:Number = this._textField.height * Starling.contentScaleFactor;
-				if(tfWidth == 0 || tfHeight == 0)
-				{
-					return;
-				}
-				if(!this._textSnapshotBitmapData || this._textSnapshotBitmapData.width != tfWidth || this._textSnapshotBitmapData.height != tfHeight)
-				{
-					if(this._textSnapshotBitmapData)
-					{
-						this._textSnapshotBitmapData.dispose();
-					}
-					this._textSnapshotBitmapData = new BitmapData(tfWidth, tfHeight, true, 0x00ff00ff);
-				}
+				return;
 			}
-
+			if(this._needsNewBitmap || !this._textSnapshotBitmapData)
+			{
+				if(this._textSnapshotBitmapData)
+				{
+					this._textSnapshotBitmapData.dispose();
+				}
+				this._textSnapshotBitmapData = new BitmapData(this._snapshotWidth, this._snapshotHeight, true, 0x00ff00ff);
+			}
 			if(!this._textSnapshotBitmapData)
 			{
 				return;
@@ -484,7 +510,7 @@ package feathers.controls.text
 			}
 			else
 			{
-				if(needsNewBitmap)
+				if(this._needsNewBitmap)
 				{
 					this._textSnapshot.texture.dispose();
 					this._textSnapshot.texture = starling.textures.Texture.fromBitmapData(this._textSnapshotBitmapData, false, false, Starling.contentScaleFactor);
@@ -492,8 +518,7 @@ package feathers.controls.text
 				}
 				else
 				{
-					//this is faster, so use it if we haven't resized the
-					//bitmapdata
+					//this is faster if we haven't resized the bitmapdata
 					const texture:starling.textures.Texture = this._textSnapshot.texture;
 					if(Starling.handleLostContext && texture is ConcreteTexture)
 					{
@@ -502,6 +527,16 @@ package feathers.controls.text
 					flash.display3D.textures.Texture(texture.base).uploadFromBitmapData(this._textSnapshotBitmapData);
 				}
 			}
+			this._needsNewBitmap = false;
+		}
+
+		/**
+		 * @private
+		 */
+		protected function addedToStageHandler(event:Event):void
+		{
+			//we need to invalidate in order to get a fresh snapshot
+			this.invalidate(INVALIDATION_FLAG_DATA);
 		}
 
 		/**
@@ -523,6 +558,17 @@ package feathers.controls.text
 				this.removeChild(this._textSnapshot, true);
 				this._textSnapshot = null;
 			}
+		}
+
+		protected function enterFrameHandler(event:Event):void
+		{
+			this._frameCount++;
+			if(this._frameCount < 2)
+			{
+				return;
+			}
+			this.removeEventListener(Event.ENTER_FRAME, enterFrameHandler);
+			this.refreshSnapshot();
 		}
 	}
 }

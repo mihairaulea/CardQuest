@@ -93,7 +93,7 @@ package view.util
 		// Testerz
 		public static function createShadowText(text:String, size:int, color:uint, shadowColor:uint):TextField
 		{
-			const shadow:DropShadowFilter = new DropShadowFilter(3, 45, color, 1, 2, 2, 10, 1, false, false, false);
+			const shadow:DropShadowFilter = new DropShadowFilter(3, 45, shadowColor, 1, 2, 2, 10, 1, false, false, false);
 			const textSize:int = size;
 			const textFont:Font = new HoboStd();
 			const textColor:uint = 0xFFFFFF;

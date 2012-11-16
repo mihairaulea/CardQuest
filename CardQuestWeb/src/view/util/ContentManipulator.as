@@ -34,7 +34,7 @@ package view.util
 			setEventListeners();
 		}
 		
-		private function setContent(defaultScreen:int =0):void
+		private function setContent(defaultScreen:int =3):void
 		{
 			contentArray[0] = firstScreen;
 			contentArray[1] = worldBrowser;

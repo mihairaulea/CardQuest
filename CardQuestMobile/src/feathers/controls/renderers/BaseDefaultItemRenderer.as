@@ -24,15 +24,16 @@
  */
 package feathers.controls.renderers
 {
-	import flash.events.TimerEvent;
-	import flash.geom.Point;
-	import flash.utils.Timer;
-
 	import feathers.controls.Button;
 	import feathers.controls.text.BitmapFontTextRenderer;
 	import feathers.core.FeathersControl;
+	import feathers.core.IFeathersControl;
 	import feathers.core.ITextRenderer;
 	import feathers.core.PropertyProxy;
+
+	import flash.events.TimerEvent;
+	import flash.geom.Point;
+	import flash.utils.Timer;
 
 	import starling.display.DisplayObject;
 	import starling.display.Image;
@@ -53,7 +54,7 @@ package feathers.controls.renderers
 		/**
 		 * @private
 		 */
-		private static const helperPoint:Point = new Point();
+		private static const HELPER_POINT:Point = new Point();
 
 		/**
 		 * @private
@@ -105,7 +106,7 @@ package feathers.controls.renderers
 		/**
 		 * @private
 		 */
-		private var _data:Object;
+		protected var _data:Object;
 
 		/**
 		 * The item displayed by this renderer.
@@ -131,7 +132,7 @@ package feathers.controls.renderers
 		/**
 		 * @private
 		 */
-		protected var _owner:FeathersControl;
+		protected var _owner:IFeathersControl;
 
 		/**
 		 * @private
@@ -254,7 +255,7 @@ package feathers.controls.renderers
 		/**
 		 * @private
 		 */
-		private var _labelField:String = "label";
+		protected var _labelField:String = "label";
 
 		/**
 		 * The field in the item that contains the label text to be displayed by
@@ -294,12 +295,15 @@ package feathers.controls.renderers
 		/**
 		 * @private
 		 */
-		private var _labelFunction:Function;
+		protected var _labelFunction:Function;
 
 		/**
 		 * A function used to generate label text for a specific item. If this
 		 * function is not null, then the <code>labelField</code> will be
 		 * ignored.
+		 *
+		 * <p>The function is expected to have the following signature:</p>
+		 * <pre>function( item:Object ):String</pre>
 		 *
 		 * <p>All of the label fields and functions, ordered by priority:</p>
 		 * <ol>
@@ -319,6 +323,10 @@ package feathers.controls.renderers
 		 */
 		public function set labelFunction(value:Function):void
 		{
+			if(this._labelFunction == value)
+			{
+				return;
+			}
 			this._labelFunction = value;
 			this.invalidate(INVALIDATION_FLAG_DATA);
 		}
@@ -326,7 +334,7 @@ package feathers.controls.renderers
 		/**
 		 * @private
 		 */
-		private var _iconField:String = "icon";
+		protected var _iconField:String = "icon";
 
 		/**
 		 * The field in the item that contains a display object to be displayed
@@ -365,7 +373,7 @@ package feathers.controls.renderers
 		/**
 		 * @private
 		 */
-		private var _iconFunction:Function;
+		protected var _iconFunction:Function;
 
 		/**
 		 * A function used to generate an icon for a specific item.
@@ -395,6 +403,10 @@ package feathers.controls.renderers
 		 */
 		public function set iconFunction(value:Function):void
 		{
+			if(this._iconFunction == value)
+			{
+				return;
+			}
 			this._iconFunction = value;
 			this.invalidate(INVALIDATION_FLAG_DATA);
 		}
@@ -402,7 +414,7 @@ package feathers.controls.renderers
 		/**
 		 * @private
 		 */
-		private var _iconTextureField:String = "iconTexture";
+		protected var _iconTextureField:String = "iconTexture";
 
 		/**
 		 * The field in the item that contains a texture to be used for the
@@ -445,7 +457,7 @@ package feathers.controls.renderers
 		/**
 		 * @private
 		 */
-		private var _iconTextureFunction:Function;
+		protected var _iconTextureFunction:Function;
 
 		/**
 		 * A function used to generate a texture to be used for the renderer's
@@ -481,6 +493,10 @@ package feathers.controls.renderers
 		 */
 		public function set iconTextureFunction(value:Function):void
 		{
+			if(this._iconTextureFunction == value)
+			{
+				return;
+			}
 			this._iconTextureFunction = value;
 			this.invalidate(INVALIDATION_FLAG_DATA);
 		}
@@ -488,7 +504,7 @@ package feathers.controls.renderers
 		/**
 		 * @private
 		 */
-		private var _accessoryField:String = "accessory";
+		protected var _accessoryField:String = "accessory";
 
 		/**
 		 * The field in the item that contains a display object to be positioned
@@ -533,7 +549,7 @@ package feathers.controls.renderers
 		/**
 		 * @private
 		 */
-		private var _accessoryFunction:Function;
+		protected var _accessoryFunction:Function;
 
 		/**
 		 * A function that returns a display object to be positioned in the
@@ -581,7 +597,7 @@ package feathers.controls.renderers
 		/**
 		 * @private
 		 */
-		private var _accessoryTextureField:String = "accessoryTexture";
+		protected var _accessoryTextureField:String = "accessoryTexture";
 
 		/**
 		 * The field in the item that contains a texture to be displayed in a
@@ -634,7 +650,7 @@ package feathers.controls.renderers
 		/**
 		 * @private
 		 */
-		private var _accessoryTextureFunction:Function;
+		protected var _accessoryTextureFunction:Function;
 
 		/**
 		 * A function that returns a texture to be displayed in a
@@ -690,7 +706,7 @@ package feathers.controls.renderers
 		/**
 		 * @private
 		 */
-		private var _accessoryLabelField:String = "accessoryLabel";
+		protected var _accessoryLabelField:String = "accessoryLabel";
 
 		/**
 		 * The field in the item that contains a string to be displayed in a
@@ -743,7 +759,7 @@ package feathers.controls.renderers
 		/**
 		 * @private
 		 */
-		private var _accessoryLabelFunction:Function;
+		protected var _accessoryLabelFunction:Function;
 
 		/**
 		 * A function that returns a string to be displayed in a
@@ -807,6 +823,9 @@ package feathers.controls.renderers
 		 * Useful for transforming the <code>Image</code> in some way. For
 		 * example, you might want to scale it for current DPI.
 		 *
+		 * <p>The function is expected to have the following signature:</p>
+		 * <pre>function():Image</pre>
+		 *
 		 * @see #iconTextureField;
 		 * @see #iconTextureFunction;
 		 */
@@ -839,6 +858,9 @@ package feathers.controls.renderers
 		 * Useful for transforming the <code>Image</code> in some way. For
 		 * example, you might want to scale it for current DPI.
 		 *
+		 * <p>The function is expected to have the following signature:</p>
+		 * <pre>function():Image</pre>
+		 *
 		 * @see #accessoryTextureField;
 		 * @see #accessoryTextureFunction;
 		 */
@@ -866,9 +888,12 @@ package feathers.controls.renderers
 		protected var _accessoryLabelFactory:Function;
 
 		/**
-		 * A function that generates <code>Label</code> that uses the result
+		 * A function that generates <code>ITextRenderer</code> that uses the result
 		 * of <code>accessoryLabelField</code> or <code>accessoryLabelFunction</code>.
-		 * Useful for skinning the <code>Label</code>.
+		 * Useful for skinning the <code>ITextRenderer</code>.
+		 *
+		 * <p>The function is expected to have the following signature:</p>
+		 * <pre>function():ITextRenderer</pre>
 		 *
 		 * @see #accessoryLabelField;
 		 * @see #accessoryLabelFunction;
@@ -894,7 +919,7 @@ package feathers.controls.renderers
 		/**
 		 * @private
 		 */
-		private var _accessoryLabelProperties:PropertyProxy;
+		protected var _accessoryLabelProperties:PropertyProxy;
 
 		/**
 		 * A set of key/value pairs to be passed down to a label accessory.
@@ -942,12 +967,12 @@ package feathers.controls.renderers
 			}
 			if(this._accessoryLabelProperties)
 			{
-				this._accessoryLabelProperties.onChange.remove(accessoryLabelProperties_onChange);
+				this._accessoryLabelProperties.removeOnChangeCallback(accessoryLabelProperties_onChange);
 			}
 			this._accessoryLabelProperties = PropertyProxy(value);
 			if(this._accessoryLabelProperties)
 			{
-				this._accessoryLabelProperties.onChange.add(accessoryLabelProperties_onChange);
+				this._accessoryLabelProperties.addOnChangeCallback(accessoryLabelProperties_onChange);
 			}
 			this.invalidate(INVALIDATION_FLAG_STYLES);
 		}
@@ -1131,10 +1156,10 @@ package feathers.controls.renderers
 			{
 				return false;
 			}
-			this.labelTextRenderer.measureText(helperPoint);
-			if(this.accessory is FeathersControl)
+			this.labelTextRenderer.measureText(HELPER_POINT);
+			if(this.accessory is IFeathersControl)
 			{
-				FeathersControl(this.accessory).validate();
+				IFeathersControl(this.accessory).validate();
 			}
 			var newWidth:Number = this.explicitWidth;
 			if(needsWidth)
@@ -1144,11 +1169,11 @@ package feathers.controls.renderers
 					if(this._iconPosition != ICON_POSITION_TOP && this._iconPosition != ICON_POSITION_BOTTOM)
 					{
 						var adjustedGap:Number = this._gap == Number.POSITIVE_INFINITY ? Math.min(this._paddingLeft, this._paddingRight) : this._gap;
-						newWidth = this.currentIcon.width + adjustedGap + helperPoint.x;
+						newWidth = this.currentIcon.width + adjustedGap + HELPER_POINT.x;
 					}
 					else
 					{
-						newWidth = Math.max(this.currentIcon.width, helperPoint.x);
+						newWidth = Math.max(this.currentIcon.width, HELPER_POINT.x);
 					}
 				}
 				else if(this.currentIcon)
@@ -1157,7 +1182,7 @@ package feathers.controls.renderers
 				}
 				else if(this.label)
 				{
-					newWidth = helperPoint.x;
+					newWidth = HELPER_POINT.x;
 				}
 				if(this.accessory)
 				{
@@ -1182,11 +1207,11 @@ package feathers.controls.renderers
 					if(this._iconPosition == ICON_POSITION_TOP || this._iconPosition == ICON_POSITION_BOTTOM)
 					{
 						adjustedGap = this._gap == Number.POSITIVE_INFINITY ? Math.min(this._paddingTop, this._paddingBottom) : this._gap;
-						newHeight = this.currentIcon.height + adjustedGap + helperPoint.y;
+						newHeight = this.currentIcon.height + adjustedGap + HELPER_POINT.y;
 					}
 					else
 					{
-						newHeight = Math.max(this.currentIcon.height, helperPoint.y);
+						newHeight = Math.max(this.currentIcon.height, HELPER_POINT.y);
 					}
 				}
 				else if(this.currentIcon)
@@ -1195,7 +1220,7 @@ package feathers.controls.renderers
 				}
 				else if(this.label)
 				{
-					newHeight = helperPoint.y;
+					newHeight = HELPER_POINT.y;
 				}
 				if(this.accessory)
 				{
@@ -1241,7 +1266,7 @@ package feathers.controls.renderers
 					this.accessory = newAccessory;
 					if(this.accessory)
 					{
-						if(this.accessory is FeathersControl && !(this.accessory is BitmapFontTextRenderer))
+						if(this.accessory is IFeathersControl && !(this.accessory is BitmapFontTextRenderer))
 						{
 							this.accessory.addEventListener(TouchEvent.TOUCH, accessory_touchHandler);
 						}
@@ -1251,8 +1276,14 @@ package feathers.controls.renderers
 			}
 			else
 			{
-				this._label = "";
-				this.defaultIcon = null;
+				if(this._itemHasLabel)
+				{
+					this._label = "";
+				}
+				if(this._itemHasIcon)
+				{
+					this.defaultIcon = null;
+				}
 				if(this.accessory)
 				{
 					this.accessory.removeFromParent();
@@ -1339,8 +1370,8 @@ package feathers.controls.renderers
 				if(!this.accessoryLabel)
 				{
 					const factory:Function = this._accessoryLabelFactory != null ? this._accessoryLabelFactory : FeathersControl.defaultTextRendererFactory;
-					this.accessoryLabel = factory();
-					FeathersControl(this.accessoryLabel).nameList.add(this.accessoryLabelName);
+					this.accessoryLabel = ITextRenderer(factory());
+					this.accessoryLabel.nameList.add(this.accessoryLabelName);
 				}
 				this.accessoryLabel.text = label;
 			}
@@ -1356,14 +1387,63 @@ package feathers.controls.renderers
 		 */
 		override protected function layoutContent():void
 		{
-			super.layoutContent();
+			if(this.accessory is IFeathersControl)
+			{
+				IFeathersControl(this.accessory).validate();
+			}
+			var labelMaxWidth:Number = this.actualWidth - this._paddingLeft - this._paddingRight;
+			var adjustedGap:Number = this._gap == Number.POSITIVE_INFINITY ? Math.min(this._paddingLeft, this._paddingRight) : this._gap;
+			if(this.currentIcon && (this._iconPosition == ICON_POSITION_LEFT || this._iconPosition == ICON_POSITION_LEFT_BASELINE ||
+				this._iconPosition == ICON_POSITION_RIGHT || this._iconPosition == ICON_POSITION_RIGHT_BASELINE))
+			{
+				labelMaxWidth -= (this.currentIcon.width + adjustedGap);
+			}
+			if(this.accessory)
+			{
+				labelMaxWidth -= (this.accessory.width + adjustedGap);
+			}
+
+			this.labelTextRenderer.maxWidth = labelMaxWidth;
+			this.labelTextRenderer.validate();
+
+			if(this.label)
+			{
+				this.positionLabelOrIcon(DisplayObject(this.labelTextRenderer));
+				if(this.accessory)
+				{
+					if(this._horizontalAlign == Button.HORIZONTAL_ALIGN_RIGHT)
+					{
+						this.labelTextRenderer.x -= (this.accessory.width + adjustedGap);
+					}
+					else if(this._horizontalAlign == Button.HORIZONTAL_ALIGN_CENTER)
+					{
+						this.labelTextRenderer.x -= (this.accessory.width + adjustedGap) / 2;
+					}
+				}
+				if(this.currentIcon)
+				{
+					this.positionLabelAndIcon();
+				}
+			}
+			else if(this.currentIcon)
+			{
+				this.positionLabelOrIcon(this.currentIcon);
+				if(this.accessory)
+				{
+					if(this._horizontalAlign == Button.HORIZONTAL_ALIGN_RIGHT)
+					{
+						this.currentIcon.x -= (this.accessory.width + adjustedGap);
+					}
+					else if(this._horizontalAlign == Button.HORIZONTAL_ALIGN_CENTER)
+					{
+						this.currentIcon.x -= (this.accessory.width + adjustedGap) / 2;
+					}
+				}
+			}
+
 			if(!this.accessory)
 			{
 				return;
-			}
-			if(this.accessory is FeathersControl)
-			{
-				FeathersControl(this.accessory).validate();
 			}
 			this.accessory.x = this.actualWidth - this._paddingRight - this.accessory.width;
 			this.accessory.y = (this.actualHeight - this.accessory.height) / 2;
@@ -1408,6 +1488,12 @@ package feathers.controls.renderers
 		 */
 		protected function accessory_touchHandler(event:TouchEvent):void
 		{
+			if(this.accessory == this.accessoryLabel ||
+				this.accessory == this.accessoryImage)
+			{
+				//do nothing
+				return;
+			}
 			event.stopPropagation();
 		}
 	}

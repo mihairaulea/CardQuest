@@ -24,6 +24,7 @@ package starling.display
     import starling.events.Event;
     import starling.events.EventDispatcher;
     import starling.events.TouchEvent;
+    import starling.filters.FragmentFilter;
     import starling.utils.MatrixUtil;
     
     /** Dispatched when an object is added to a parent. */
@@ -126,10 +127,10 @@ package starling.display
         private var mBlendMode:String;
         private var mName:String;
         private var mUseHandCursor:Boolean;
-        private var mLastTouchTimestamp:Number;
         private var mParent:DisplayObjectContainer;  
         private var mTransformationMatrix:Matrix;
         private var mOrientationChanged:Boolean;
+        private var mFilter:FragmentFilter;
         
         /** Helper objects. */
         private static var sAncestors:Vector.<DisplayObject> = new <DisplayObject>[];
@@ -148,16 +149,16 @@ package starling.display
             mX = mY = mPivotX = mPivotY = mRotation = mSkewX = mSkewY = 0.0;
             mScaleX = mScaleY = mAlpha = 1.0;            
             mVisible = mTouchable = true;
-            mLastTouchTimestamp = -1;
             mBlendMode = BlendMode.AUTO;
             mTransformationMatrix = new Matrix();
             mOrientationChanged = mUseHandCursor = false;
         }
         
         /** Disposes all resources of the display object. 
-          * GPU buffers are released, event listeners are removed. */
+          * GPU buffers are released, event listeners are removed, filters are disposed. */
         public function dispose():void
         {
+            if (mFilter) mFilter.dispose();
             removeEventListeners();
         }
         
@@ -310,19 +311,11 @@ package starling.display
             throw new AbstractMethodError("Method needs to be implemented in subclass");
         }
         
-        /** @inheritDoc */
-        public override function dispatchEvent(event:Event):void
+        /** Indicates if an object occupies any visible area. (Which is the case when its 'alpha', 
+         *  'scaleX' and 'scaleY' values are not zero, and its 'visible' property is enabled.) */
+        public function get hasVisibleArea():Boolean
         {
-            // on one given moment, there is only one set of touches -- thus, 
-            // we process only one touch event with a certain timestamp per frame
-            if (event is TouchEvent)
-            {
-                var touchEvent:TouchEvent = event as TouchEvent;
-                if (touchEvent.timestamp == mLastTouchTimestamp) return;
-                else mLastTouchTimestamp = touchEvent.timestamp;
-            }
-            
-            super.dispatchEvent(event);
+            return mAlpha != 0.0 && mVisible && mScaleX != 0.0 && mScaleY != 0.0;
         }
         
         // internal methods
@@ -342,12 +335,6 @@ package starling.display
                 mParent = value; 
         }
         
-        /** @private */
-        internal function get hasVisibleArea():Boolean
-        {
-            return mAlpha != 0.0 && mVisible && mScaleX != 0.0 && mScaleY != 0.0;
-        }
-        
         // helpers
         
         private function normalizeAngle(angle:Number):Number
@@ -363,7 +350,7 @@ package starling.display
         /** The transformation matrix of the object relative to its parent.
          *  If you assign a custom transformation matrix, Starling will figure out suitable values  
          *  for the corresponding orienation properties (<code>x, y, scaleX/Y, rotation</code> etc).
-         *  CAUTION: Returns not a copy, but the actual object! */
+         *  CAUTION: returns not a copy, but the actual object! */
         public function get transformationMatrix():Matrix
         {
             if (mOrientationChanged)
@@ -392,6 +379,7 @@ package starling.display
         public function set transformationMatrix(matrix:Matrix):void
         {
             mOrientationChanged = false;
+            mTransformationMatrix.copyFrom(matrix);
             mX = matrix.tx;
             mY = matrix.ty;
             
@@ -456,7 +444,6 @@ package starling.display
             scaleX = 1.0;
             var actualWidth:Number = width;
             if (actualWidth != 0.0) scaleX = value / actualWidth;
-            else                    scaleX = 1.0;
         }
         
         /** The height of the object in pixels. */
@@ -466,7 +453,6 @@ package starling.display
             scaleY = 1.0;
             var actualHeight:Number = height;
             if (actualHeight != 0.0) scaleY = value / actualHeight;
-            else                     scaleY = 1.0;
         }
         
         /** The x coordinate of the object relative to the local coordinates of the parent. */
@@ -599,7 +585,14 @@ package starling.display
         /** The name of the display object (default: null). Used by 'getChildByName()' of 
          *  display object containers. */
         public function get name():String { return mName; }
-        public function set name(value:String):void { mName = value; }        
+        public function set name(value:String):void { mName = value; }
+        
+        /** The filter or filter group that is attached to the display object. The starling.filters 
+         *  package contains several classes that define specific filters you can use. 
+         *  Beware that you should NOT use the same filter on more than one object (for 
+         *  performance reasons). */ 
+        public function get filter():FragmentFilter { return mFilter; }
+        public function set filter(value:FragmentFilter):void { mFilter = value; }
         
         /** The display object container that contains this display object. */
         public function get parent():DisplayObjectContainer { return mParent; }

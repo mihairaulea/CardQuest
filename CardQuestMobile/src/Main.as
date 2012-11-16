@@ -42,8 +42,8 @@ package
 			Starling.multitouchEnabled = true;
 			
 			// Debug stats
-			this.stats = new Stats();
-			addChild(stats);
+			//this.stats = new Stats();
+			//addChild(stats);
 			
 			// Init starling
 			this.starling = new Starling(CardQuestMain, this.stage);

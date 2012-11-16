@@ -24,17 +24,16 @@
  */
 package feathers.controls
 {
+	import feathers.core.FeathersControl;
+	import feathers.core.PropertyProxy;
+	import feathers.events.FeathersEventType;
+	import feathers.utils.math.clamp;
+	import feathers.utils.math.roundToNearest;
+
 	import flash.events.TimerEvent;
 	import flash.geom.Point;
 	import flash.geom.Rectangle;
 	import flash.utils.Timer;
-
-	import feathers.core.FeathersControl;
-	import feathers.core.PropertyProxy;
-	import feathers.utils.math.clamp;
-	import feathers.utils.math.roundToNearest;
-	import org.osflash.signals.ISignal;
-	import org.osflash.signals.Signal;
 
 	import starling.display.DisplayObject;
 	import starling.events.Event;
@@ -43,8 +42,37 @@ package feathers.controls
 	import starling.events.TouchPhase;
 
 	/**
+	 * Dispatched when the scroll bar's value changes.
+	 *
+	 * @eventType starling.events.Event.CHANGE
+	 */
+	[Event(name="change",type="starling.events.Event")]
+
+	/**
+	 * Dispatched when the user starts interacting with the scroll bar's thumb,
+	 * track, or buttons.
+	 *
+	 * @eventType feathers.events.FeathersEventType.BEGIN_INTERACTION
+	 */
+	[Event(name="beginInteraction",type="starling.events.Event")]
+
+	/**
+	 * Dispatched when the user stops interacting with the scroll bar's thumb,
+	 * track, or buttons.
+	 *
+	 * @eventType feathers.events.FeathersEventType.END_INTERACTION
+	 */
+	[Event(name="endInteraction",type="starling.events.Event")]
+
+	/**
 	 * Select a value between a minimum and a maximum by dragging a thumb over
-	 * a physical range or by using step buttons.
+	 * a physical range or by using step buttons. This is a desktop-centric
+	 * scroll bar with many skinnable parts. For mobile, the
+	 * <code>SimpleScrollBar</code> is probably a better choice as it provides
+	 * only the thumb to indicate position without all the extra chrome.
+	 *
+	 * @see http://wiki.starling-framework.org/feathers/scroll-bar
+	 * @see SimpleScrollBar
 	 */
 	public class ScrollBar extends FeathersControl implements IScrollBar
 	{
@@ -179,27 +207,27 @@ package feathers.controls
 		protected var maximumTrackOriginalHeight:Number = NaN;
 
 		/**
-		 * @private
+		 * The scroll bar's decrement button sub-component.
 		 */
 		protected var decrementButton:Button;
 
 		/**
-		 * @private
+		 * The scroll bar's increment button sub-component.
 		 */
 		protected var incrementButton:Button;
 
 		/**
-		 * @private
+		 * The scroll bar's thumb sub-component.
 		 */
 		protected var thumb:Button;
 
 		/**
-		 * @private
+		 * The scroll bar's minimum track sub-component.
 		 */
 		protected var minimumTrack:Button;
 
 		/**
-		 * @private
+		 * The scroll bar's maximum track sub-component.
 		 */
 		protected var maximumTrack:Button;
 
@@ -208,6 +236,7 @@ package feathers.controls
 		 */
 		protected var _direction:String = DIRECTION_HORIZONTAL;
 
+		[Inspectable(type="String",enumeration="horizontal,vertical")]
 		/**
 		 * Determines if the scroll bar's thumb can be dragged horizontally or
 		 * vertically. When this value changes, the scroll bar's width and
@@ -258,7 +287,7 @@ package feathers.controls
 			this.invalidate(INVALIDATION_FLAG_DATA);
 			if(this.liveDragging || !this.isDragging)
 			{
-				this._onChange.dispatch(this);
+				this.dispatchEventWith(Event.CHANGE);
 			}
 		}
 
@@ -338,7 +367,7 @@ package feathers.controls
 		/**
 		 * @private
 		 */
-		private var _page:Number = 0;
+		protected var _page:Number = 0;
 
 		/**
 		 * @inheritDoc
@@ -521,47 +550,9 @@ package feathers.controls
 		/**
 		 * @private
 		 */
-		protected var _onChange:Signal = new Signal(ScrollBar);
-
-		/**
-		 * Dispatched when the <code>value</code> property changes.
-		 */
-		public function get onChange():ISignal
-		{
-			return this._onChange;
-		}
-
-		/**
-		 * @private
-		 */
-		protected var _onDragStart:Signal = new Signal(ScrollBar);
-
-		/**
-		 * Dispatched when the user begins dragging the thumb.
-		 */
-		public function get onDragStart():ISignal
-		{
-			return this._onDragStart;
-		}
-
-		/**
-		 * @private
-		 */
-		protected var _onDragEnd:Signal = new Signal(ScrollBar);
-
-		/**
-		 * Dispatched when the user stops dragging the thumb.
-		 */
-		public function get onDragEnd():ISignal
-		{
-			return this._onDragEnd;
-		}
-
-		/**
-		 * @private
-		 */
 		protected var _trackLayoutMode:String = TRACK_LAYOUT_MODE_SINGLE;
 
+		[Inspectable(type="String",enumeration="single,stretch,scroll")]
 		/**
 		 * Determines how the minimum and maximum track skins are positioned and
 		 * sized.
@@ -587,7 +578,7 @@ package feathers.controls
 		/**
 		 * @private
 		 */
-		private var _minimumTrackProperties:PropertyProxy;
+		protected var _minimumTrackProperties:PropertyProxy;
 
 		/**
 		 * A set of key/value pairs to be passed down to the scroll bar's
@@ -636,12 +627,12 @@ package feathers.controls
 			}
 			if(this._minimumTrackProperties)
 			{
-				this._minimumTrackProperties.onChange.remove(minimumTrackProperties_onChange);
+				this._minimumTrackProperties.removeOnChangeCallback(minimumTrackProperties_onChange);
 			}
 			this._minimumTrackProperties = PropertyProxy(value);
 			if(this._minimumTrackProperties)
 			{
-				this._minimumTrackProperties.onChange.add(minimumTrackProperties_onChange);
+				this._minimumTrackProperties.addOnChangeCallback(minimumTrackProperties_onChange);
 			}
 			this.invalidate(INVALIDATION_FLAG_STYLES);
 		}
@@ -649,7 +640,7 @@ package feathers.controls
 		/**
 		 * @private
 		 */
-		private var _maximumTrackProperties:PropertyProxy;
+		protected var _maximumTrackProperties:PropertyProxy;
 
 		/**
 		 * A set of key/value pairs to be passed down to the scroll bar's
@@ -698,12 +689,12 @@ package feathers.controls
 			}
 			if(this._maximumTrackProperties)
 			{
-				this._maximumTrackProperties.onChange.remove(maximumTrackProperties_onChange);
+				this._maximumTrackProperties.removeOnChangeCallback(maximumTrackProperties_onChange);
 			}
 			this._maximumTrackProperties = PropertyProxy(value);
 			if(this._maximumTrackProperties)
 			{
-				this._maximumTrackProperties.onChange.add(maximumTrackProperties_onChange);
+				this._maximumTrackProperties.addOnChangeCallback(maximumTrackProperties_onChange);
 			}
 			this.invalidate(INVALIDATION_FLAG_STYLES);
 		}
@@ -711,7 +702,7 @@ package feathers.controls
 		/**
 		 * @private
 		 */
-		private var _thumbProperties:PropertyProxy;
+		protected var _thumbProperties:PropertyProxy;
 
 		/**
 		 * A set of key/value pairs to be passed down to the scroll bar's thumb
@@ -760,12 +751,12 @@ package feathers.controls
 			}
 			if(this._thumbProperties)
 			{
-				this._thumbProperties.onChange.remove(thumbProperties_onChange);
+				this._thumbProperties.removeOnChangeCallback(thumbProperties_onChange);
 			}
 			this._thumbProperties = PropertyProxy(value);
 			if(this._thumbProperties)
 			{
-				this._thumbProperties.onChange.add(thumbProperties_onChange);
+				this._thumbProperties.addOnChangeCallback(thumbProperties_onChange);
 			}
 			this.invalidate(INVALIDATION_FLAG_STYLES);
 		}
@@ -773,7 +764,7 @@ package feathers.controls
 		/**
 		 * @private
 		 */
-		private var _decrementButtonProperties:PropertyProxy;
+		protected var _decrementButtonProperties:PropertyProxy;
 
 		/**
 		 * A set of key/value pairs to be passed down to the scroll bar's
@@ -822,12 +813,12 @@ package feathers.controls
 			}
 			if(this._decrementButtonProperties)
 			{
-				this._decrementButtonProperties.onChange.remove(decrementButtonProperties_onChange);
+				this._decrementButtonProperties.removeOnChangeCallback(decrementButtonProperties_onChange);
 			}
 			this._decrementButtonProperties = PropertyProxy(value);
 			if(this._decrementButtonProperties)
 			{
-				this._decrementButtonProperties.onChange.add(decrementButtonProperties_onChange);
+				this._decrementButtonProperties.addOnChangeCallback(decrementButtonProperties_onChange);
 			}
 			this.invalidate(INVALIDATION_FLAG_STYLES);
 		}
@@ -835,7 +826,7 @@ package feathers.controls
 		/**
 		 * @private
 		 */
-		private var _incrementButtonProperties:PropertyProxy;
+		protected var _incrementButtonProperties:PropertyProxy;
 
 		/**
 		 * A set of key/value pairs to be passed down to the scroll bar's
@@ -884,33 +875,45 @@ package feathers.controls
 			}
 			if(this._incrementButtonProperties)
 			{
-				this._incrementButtonProperties.onChange.remove(incrementButtonProperties_onChange);
+				this._incrementButtonProperties.removeOnChangeCallback(incrementButtonProperties_onChange);
 			}
 			this._incrementButtonProperties = PropertyProxy(value);
 			if(this._incrementButtonProperties)
 			{
-				this._incrementButtonProperties.onChange.add(incrementButtonProperties_onChange);
+				this._incrementButtonProperties.addOnChangeCallback(incrementButtonProperties_onChange);
 			}
 			this.invalidate(INVALIDATION_FLAG_STYLES);
 		}
 
-		private var _touchPointID:int = -1;
-		private var _touchStartX:Number = NaN;
-		private var _touchStartY:Number = NaN;
-		private var _thumbStartX:Number = NaN;
-		private var _thumbStartY:Number = NaN;
-		private var _touchValue:Number;
+		/**
+		 * @private
+		 */
+		protected var _touchPointID:int = -1;
 
 		/**
-		 * @inheritDoc
+		 * @private
 		 */
-		override public function dispose():void
-		{
-			this._onChange.removeAll();
-			this._onDragEnd.removeAll();
-			this._onDragStart.removeAll();
-			super.dispose();
-		}
+		protected var _touchStartX:Number = NaN;
+
+		/**
+		 * @private
+		 */
+		protected var _touchStartY:Number = NaN;
+
+		/**
+		 * @private
+		 */
+		protected var _thumbStartX:Number = NaN;
+
+		/**
+		 * @private
+		 */
+		protected var _thumbStartY:Number = NaN;
+
+		/**
+		 * @private
+		 */
+		protected var _touchValue:Number;
 
 		/**
 		 * @private
@@ -941,8 +944,8 @@ package feathers.controls
 				this.decrementButton = new Button();
 				this.decrementButton.nameList.add(this.decrementButtonName);
 				this.decrementButton.label = "";
-				this.decrementButton.onPress.add(decrementButton_onPress);
-				this.decrementButton.onRelease.add(decrementButton_onRelease);
+				this.decrementButton.addEventListener(TouchEvent.TOUCH, decrementButton_touchHandler);
+				this.decrementButton.addEventListener(Event.TRIGGERED, decrementButton_triggeredHandler);
 				this.addChild(this.decrementButton);
 			}
 
@@ -951,8 +954,8 @@ package feathers.controls
 				this.incrementButton = new Button();
 				this.incrementButton.nameList.add(this.incrementButtonName);
 				this.incrementButton.label = "";
-				this.incrementButton.onPress.add(incrementButton_onPress);
-				this.incrementButton.onRelease.add(incrementButton_onRelease);
+				this.incrementButton.addEventListener(TouchEvent.TOUCH, incrementButton_touchHandler);
+				this.incrementButton.addEventListener(Event.TRIGGERED, incrementButton_triggeredHandler);
 				this.addChild(this.incrementButton);
 			}
 		}
@@ -1604,6 +1607,7 @@ package feathers.controls
 				{
 					this._touchPointID = -1;
 					this._repeatTimer.stop();
+					this.dispatchEventWith(FeathersEventType.END_INTERACTION);
 					return;
 				}
 			}
@@ -1614,6 +1618,7 @@ package feathers.controls
 					if(touch.phase == TouchPhase.BEGAN)
 					{
 						this._touchPointID = touch.id;
+						this.dispatchEventWith(FeathersEventType.BEGIN_INTERACTION);
 						touch.getLocation(this, HELPER_POINT);
 						this._touchStartX = HELPER_POINT.x;
 						this._touchStartY = HELPER_POINT.y;
@@ -1674,9 +1679,9 @@ package feathers.controls
 					this.isDragging = false;
 					if(!this.liveDragging)
 					{
-						this._onChange.dispatch(this);
+						this.dispatchEventWith(Event.CHANGE);
 					}
-					this._onDragEnd.dispatch(this);
+					this.dispatchEventWith(FeathersEventType.END_INTERACTION);
 					return;
 				}
 			}
@@ -1693,7 +1698,7 @@ package feathers.controls
 						this._touchStartX = HELPER_POINT.x;
 						this._touchStartY = HELPER_POINT.y;
 						this.isDragging = true;
-						this._onDragStart.dispatch(this);
+						this.dispatchEventWith(FeathersEventType.BEGIN_INTERACTION);
 						return;
 					}
 				}
@@ -1703,8 +1708,14 @@ package feathers.controls
 		/**
 		 * @private
 		 */
-		protected function decrementButton_onPress(button:Button):void
+		protected function decrementButton_touchHandler(event:TouchEvent):void
 		{
+			const touches:Vector.<Touch> = event.getTouches(this.decrementButton, TouchPhase.BEGAN);
+			if(touches.length == 0)
+			{
+				return;
+			}
+			this.dispatchEventWith(FeathersEventType.BEGIN_INTERACTION);
 			this.decrement();
 			this.startRepeatTimer(this.decrement);
 		}
@@ -1712,16 +1723,23 @@ package feathers.controls
 		/**
 		 * @private
 		 */
-		protected function decrementButton_onRelease(button:Button):void
+		protected function decrementButton_triggeredHandler(event:Event):void
 		{
 			this._repeatTimer.stop();
+			this.dispatchEventWith(FeathersEventType.END_INTERACTION);
 		}
 
 		/**
 		 * @private
 		 */
-		protected function incrementButton_onPress(button:Button):void
+		protected function incrementButton_touchHandler(event:TouchEvent):void
 		{
+			const touches:Vector.<Touch> = event.getTouches(this.incrementButton, TouchPhase.BEGAN);
+			if(touches.length == 0)
+			{
+				return;
+			}
+			this.dispatchEventWith(FeathersEventType.BEGIN_INTERACTION);
 			this.increment();
 			this.startRepeatTimer(this.increment);
 		}
@@ -1729,9 +1747,10 @@ package feathers.controls
 		/**
 		 * @private
 		 */
-		protected function incrementButton_onRelease(button:Button):void
+		protected function incrementButton_triggeredHandler(event:Event):void
 		{
 			this._repeatTimer.stop();
+			this.dispatchEventWith(FeathersEventType.END_INTERACTION);
 		}
 
 		/**

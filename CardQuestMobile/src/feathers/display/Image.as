@@ -41,9 +41,9 @@ package feathers.display
 	 */
 	public class Image extends starling.display.Image implements IDisplayObjectWithScrollRect
 	{
-		private static var helperPoint:Point = new Point();
-		private static var helperMatrix:Matrix = new Matrix();
-		private static var helperRectangle:Rectangle = new Rectangle();
+		private static const HELPER_POINT:Point = new Point();
+		private static const HELPER_MATRIX:Matrix = new Matrix();
+		private static const HELPER_RECTANGLE:Rectangle = new Rectangle();
 		
 		/**
 		 * Constructor.
@@ -58,7 +58,7 @@ package feathers.display
 		 */
 		override public function set width(value:Number):void
 		{
-			var actualWidth:Number = super.getBounds(this, helperRectangle).width;
+			var actualWidth:Number = super.getBounds(this, HELPER_RECTANGLE).width;
 			super.width = value;
 			//we need to override the default scaleX modification here because
 			//the "actual" width is modified by the scroll rect.
@@ -77,7 +77,7 @@ package feathers.display
 		 */
 		override public function set height(value:Number):void
 		{
-			var actualHeight:Number = super.getBounds(this, helperRectangle).height;
+			var actualHeight:Number = super.getBounds(this, HELPER_RECTANGLE).height;
 			super.height = value;
 			if(actualHeight != 0.0)
 			{
@@ -175,12 +175,12 @@ package feathers.display
 				}
 				else
 				{
-					this.getTransformationMatrix(targetSpace, helperMatrix);
-					MatrixUtil.transformCoords(helperMatrix, 0, 0, helperPoint);
-					resultRect.x = helperPoint.x;
-					resultRect.y = helperPoint.y;
-					resultRect.width = helperMatrix.a * this._scrollRect.width + helperMatrix.c * this._scrollRect.height;
-					resultRect.height = helperMatrix.d * this._scrollRect.height + helperMatrix.b * this._scrollRect.width;
+					this.getTransformationMatrix(targetSpace, HELPER_MATRIX);
+					MatrixUtil.transformCoords(HELPER_MATRIX, 0, 0, HELPER_POINT);
+					resultRect.x = HELPER_POINT.x;
+					resultRect.y = HELPER_POINT.y;
+					resultRect.width = HELPER_MATRIX.a * this._scrollRect.width + HELPER_MATRIX.c * this._scrollRect.height;
+					resultRect.height = HELPER_MATRIX.d * this._scrollRect.height + HELPER_MATRIX.b * this._scrollRect.width;
 				}
 				return resultRect;
 			}
@@ -201,9 +201,9 @@ package feathers.display
 				this._scissorRect.width *= scale;
 				this._scissorRect.height *= scale;
 				
-				this.getTransformationMatrix(this.stage, helperMatrix);
-				this._scaledScrollRectXY.x = this._scrollRect.x * helperMatrix.a;
-				this._scaledScrollRectXY.y = this._scrollRect.y * helperMatrix.d;
+				this.getTransformationMatrix(this.stage, HELPER_MATRIX);
+				this._scaledScrollRectXY.x = this._scrollRect.x * HELPER_MATRIX.a;
+				this._scaledScrollRectXY.y = this._scrollRect.y * HELPER_MATRIX.d;
 				
 				const oldRect:Rectangle = ScrollRectManager.currentScissorRect;
 				if(oldRect)
@@ -212,9 +212,13 @@ package feathers.display
 					this._scissorRect.y += ScrollRectManager.scrollRectOffsetY * scale;
 					this._scissorRect = this._scissorRect.intersection(oldRect);
 				}
+				this._scissorRect.x = Math.round(this._scissorRect.x);
+				this._scissorRect.y = Math.round(this._scissorRect.y);
+				const viewPort:Rectangle = Starling.current.viewPort;
+				//isEmpty() && <= 0 don't work here for some reason
 				if(this._scissorRect.width < 1 || this._scissorRect.height < 1 ||
-					this._scissorRect.x >= Starling.current.nativeStage.stageWidth ||
-					this._scissorRect.y >= Starling.current.nativeStage.stageHeight ||
+					this._scissorRect.x >= viewPort.width ||
+					this._scissorRect.y >= viewPort.height ||
 					(this._scissorRect.x + this._scissorRect.width) <= 0 ||
 					(this._scissorRect.y + this._scissorRect.height) <= 0)
 				{
@@ -229,8 +233,8 @@ package feathers.display
 			}
 			if(this._snapToPixels)
 			{
-				this.getTransformationMatrix(this.stage, helperMatrix);
-				support.translateMatrix(Math.round(helperMatrix.tx) - helperMatrix.tx, Math.round(helperMatrix.ty) - helperMatrix.ty);
+				this.getTransformationMatrix(this.stage, HELPER_MATRIX);
+				support.translateMatrix(Math.round(HELPER_MATRIX.tx) - HELPER_MATRIX.tx, Math.round(HELPER_MATRIX.ty) - HELPER_MATRIX.ty);
 			}
 			super.render(support, alpha);
 			if(this._scrollRect)
@@ -239,7 +243,7 @@ package feathers.display
 			}
 			if(this._snapToPixels)
 			{
-				support.translateMatrix(-(Math.round(helperMatrix.tx) - helperMatrix.tx), -(Math.round(helperMatrix.ty) - helperMatrix.ty));
+				support.translateMatrix(-(Math.round(HELPER_MATRIX.tx) - HELPER_MATRIX.tx), -(Math.round(HELPER_MATRIX.ty) - HELPER_MATRIX.ty));
 			}
 			if(this._scrollRect)
 			{

@@ -29,8 +29,8 @@ package
 			this.stage.align = StageAlign.TOP_LEFT;
 			this.stage.scaleMode = StageScaleMode.NO_SCALE;
 			
-			stats = new Stats();
-			addChild(stats);
+			//stats = new Stats();
+			//addChild(stats);
 			
 			cardQuestMain = new CardQuestMain();
 			cardQuestMain.init();

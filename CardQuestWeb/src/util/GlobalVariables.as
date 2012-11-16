@@ -11,6 +11,9 @@ package util
 		// Sound vars
 		public static var SOUND_ENABLED:Boolean = true;
 		
+		// Strings
+		
+		
 		public function GlobalVariables() {}
 		
 	}

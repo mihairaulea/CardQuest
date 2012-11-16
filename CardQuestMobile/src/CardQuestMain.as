@@ -1,8 +1,10 @@
 package  
 {
+	import starling.core.Starling;
 	import starling.display.Quad;
 	import starling.display.Sprite;
 	import starling.events.Event;
+	import util.Assets;
 	import util.GlobalVariables;
 	import view.View;
 	
@@ -27,10 +29,9 @@ package
 			stage.stageWidth = GlobalVariables.STAGE_WIDTH;
 			stage.stageHeight = GlobalVariables.STAGE_HEIGHT;
 			
-			var quad:Quad = new Quad(160, 120, 0xBBDDFF);
-			addChild(quad);
-			quad.x = (this.stage.stageWidth - quad.width) * .5
-			quad.y = 0;
+			Assets.contentScaleFactor = Starling.current.contentScaleFactor; 
+			
+			addChild(viewComponent);
 		}
 		
 	}

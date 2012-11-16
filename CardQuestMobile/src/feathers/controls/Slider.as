@@ -24,19 +24,16 @@ OTHER DEALINGS IN THE SOFTWARE.
 */
 package feathers.controls
 {
-	import flash.events.TimerEvent;
-	import flash.geom.Point;
-	import flash.geom.Rectangle;
-
 	import feathers.core.FeathersControl;
 	import feathers.core.PropertyProxy;
+	import feathers.events.FeathersEventType;
 	import feathers.utils.math.clamp;
 	import feathers.utils.math.roundToNearest;
 
+	import flash.events.TimerEvent;
+	import flash.geom.Point;
+	import flash.geom.Rectangle;
 	import flash.utils.Timer;
-
-	import org.osflash.signals.ISignal;
-	import org.osflash.signals.Signal;
 
 	import starling.display.DisplayObject;
 	import starling.events.Event;
@@ -45,11 +42,34 @@ package feathers.controls
 	import starling.events.TouchPhase;
 
 	/**
+	 * Dispatched when the slider's value changes.
+	 *
+	 * @eventType starling.events.Event.CHANGE
+	 */
+	[Event(name="change",type="starling.events.Event")]
+
+	/**
+	 * Dispatched when the user starts dragging the slider's thumb or track.
+	 *
+	 * @eventType feathers.events.FeathersEventType.BEGIN_INTERACTION
+	 */
+	[Event(name="beginInteraction",type="starling.events.Event")]
+
+	/**
+	 * Dispatched when the user stops dragging the slider's thumb or track.
+	 *
+	 * @eventType feathers.events.FeathersEventType.END_INTERACTION
+	 */
+	[Event(name="endInteraction",type="starling.events.Event")]
+
+	/**
 	 * Select a value between a minimum and a maximum by dragging a thumb over
 	 * the bounds of a track. The slider's track is divided into two parts split
 	 * by the thumb.
+	 *
+	 * @see http://wiki.starling-framework.org/feathers/slider
 	 */
-	public class Slider extends FeathersControl
+	public class Slider extends FeathersControl implements IScrollBar
 	{
 		/**
 		 * @private
@@ -129,14 +149,19 @@ package feathers.controls
 		 * The value added to the <code>nameList</code> of the thumb.
 		 */
 		protected var thumbName:String = DEFAULT_CHILD_NAME_THUMB;
+
+		/**
+		 * The thumb sub-component.
+		 */
+		protected var thumb:Button;
 		
 		/**
-		 * @private
+		 * The minimum track sub-component.
 		 */
 		protected var minimumTrack:Button;
 
 		/**
-		 * @private
+		 * The maximum track sub-component.
 		 */
 		protected var maximumTrack:Button;
 
@@ -163,54 +188,9 @@ package feathers.controls
 		/**
 		 * @private
 		 */
-		protected var thumb:Button;
-		
-		/**
-		 * @private
-		 */
-		protected var _onChange:Signal = new Signal(Slider);
-		
-		/**
-		 * Dispatched when the <code>value</code> property changes.
-		 */
-		public function get onChange():ISignal
-		{
-			return this._onChange;
-		}
-
-		/**
-		 * @private
-		 */
-		protected var _onDragStart:Signal = new Signal(Slider);
-
-		/**
-		 * Dispatched when the user begins dragging slider (using either the
-		 * thumb or the track).
-		 */
-		public function get onDragStart():ISignal
-		{
-			return this._onDragStart;
-		}
-
-		/**
-		 * @private
-		 */
-		protected var _onDragEnd:Signal = new Signal(Slider);
-
-		/**
-		 * Dispatched when the user stops dragging slider (using either the
-		 * thumb or the track).
-		 */
-		public function get onDragEnd():ISignal
-		{
-			return this._onDragEnd;
-		}
-		
-		/**
-		 * @private
-		 */
 		protected var _direction:String = DIRECTION_HORIZONTAL;
-		
+
+		[Inspectable(type="String",enumeration="horizontal,vertical")]
 		/**
 		 * Determines if the slider's thumb can be dragged horizontally or
 		 * vertically. When this value changes, the slider's width and height
@@ -252,7 +232,7 @@ package feathers.controls
 		 */
 		public function set value(newValue:Number):void
 		{
-			if(this._step != 0)
+			if(this._step != 0 && newValue != this._maximum && newValue != this._minimum)
 			{
 				newValue = roundToNearest(newValue, this._step);
 			}
@@ -265,7 +245,7 @@ package feathers.controls
 			this.invalidate(INVALIDATION_FLAG_DATA);
 			if(this.liveDragging || !this.isDragging)
 			{
-				this._onChange.dispatch(this);
+				this.dispatchEventWith(Event.CHANGE);
 			}
 		}
 		
@@ -350,7 +330,7 @@ package feathers.controls
 		/**
 		 * @private
 		 */
-		private var _page:Number = NaN;
+		protected var _page:Number = NaN;
 
 		/**
 		 * If the slider's track is touched, and the thumb is shown, the slider
@@ -476,6 +456,7 @@ package feathers.controls
 		 */
 		protected var _trackLayoutMode:String = TRACK_LAYOUT_MODE_SINGLE;
 
+		[Inspectable(type="String",enumeration="single,stretch,scroll")]
 		/**
 		 * Determines how the minimum and maximum track skins are positioned and
 		 * sized.
@@ -539,7 +520,7 @@ package feathers.controls
 		/**
 		 * @private
 		 */
-		private var _minimumTrackProperties:PropertyProxy;
+		protected var _minimumTrackProperties:PropertyProxy;
 
 		/**
 		 * A set of key/value pairs to be passed down to the slider's minimum
@@ -588,12 +569,12 @@ package feathers.controls
 			}
 			if(this._minimumTrackProperties)
 			{
-				this._minimumTrackProperties.onChange.remove(minimumTrackProperties_onChange);
+				this._minimumTrackProperties.removeOnChangeCallback(minimumTrackProperties_onChange);
 			}
 			this._minimumTrackProperties = PropertyProxy(value);
 			if(this._minimumTrackProperties)
 			{
-				this._minimumTrackProperties.onChange.add(minimumTrackProperties_onChange);
+				this._minimumTrackProperties.addOnChangeCallback(minimumTrackProperties_onChange);
 			}
 			this.invalidate(INVALIDATION_FLAG_STYLES);
 		}
@@ -601,7 +582,7 @@ package feathers.controls
 		/**
 		 * @private
 		 */
-		private var _maximumTrackProperties:PropertyProxy;
+		protected var _maximumTrackProperties:PropertyProxy;
 		
 		/**
 		 * A set of key/value pairs to be passed down to the slider's maximum
@@ -650,12 +631,12 @@ package feathers.controls
 			}
 			if(this._maximumTrackProperties)
 			{
-				this._maximumTrackProperties.onChange.remove(maximumTrackProperties_onChange);
+				this._maximumTrackProperties.removeOnChangeCallback(maximumTrackProperties_onChange);
 			}
 			this._maximumTrackProperties = PropertyProxy(value);
 			if(this._maximumTrackProperties)
 			{
-				this._maximumTrackProperties.onChange.add(maximumTrackProperties_onChange);
+				this._maximumTrackProperties.addOnChangeCallback(maximumTrackProperties_onChange);
 			}
 			this.invalidate(INVALIDATION_FLAG_STYLES);
 		}
@@ -663,7 +644,7 @@ package feathers.controls
 		/**
 		 * @private
 		 */
-		private var _thumbProperties:PropertyProxy;
+		protected var _thumbProperties:PropertyProxy;
 		
 		/**
 		 * A set of key/value pairs to be passed down to the slider's thumb
@@ -712,33 +693,45 @@ package feathers.controls
 			}
 			if(this._thumbProperties)
 			{
-				this._thumbProperties.onChange.remove(thumbProperties_onChange);
+				this._thumbProperties.removeOnChangeCallback(thumbProperties_onChange);
 			}
 			this._thumbProperties = PropertyProxy(value);
 			if(this._thumbProperties)
 			{
-				this._thumbProperties.onChange.add(thumbProperties_onChange);
+				this._thumbProperties.addOnChangeCallback(thumbProperties_onChange);
 			}
 			this.invalidate(INVALIDATION_FLAG_STYLES);
 		}
-		
-		private var _touchPointID:int = -1;
-		private var _touchStartX:Number = NaN;
-		private var _touchStartY:Number = NaN;
-		private var _thumbStartX:Number = NaN;
-		private var _thumbStartY:Number = NaN;
-		private var _touchValue:Number;
-		
+
 		/**
-		 * @inheritDoc
+		 * @private
 		 */
-		override public function dispose():void
-		{
-			this._onChange.removeAll();
-			this._onDragEnd.removeAll();
-			this._onDragStart.removeAll();
-			super.dispose();
-		}
+		protected var _touchPointID:int = -1;
+
+		/**
+		 * @private
+		 */
+		protected var _touchStartX:Number = NaN;
+
+		/**
+		 * @private
+		 */
+		protected var _touchStartY:Number = NaN;
+
+		/**
+		 * @private
+		 */
+		protected var _thumbStartX:Number = NaN;
+
+		/**
+		 * @private
+		 */
+		protected var _thumbStartY:Number = NaN;
+
+		/**
+		 * @private
+		 */
+		protected var _touchValue:Number;
 		
 		/**
 		 * @private
@@ -1237,7 +1230,7 @@ package feathers.controls
 			this.isDragging = false;
 			if(wasDragging && !this.liveDragging)
 			{
-				this._onChange.dispatch(this);
+				this.dispatchEventWith(Event.CHANGE);
 			}
 		}
 		
@@ -1281,9 +1274,9 @@ package feathers.controls
 					this.isDragging = false;
 					if(!this.liveDragging)
 					{
-						this._onChange.dispatch(this);
+						this.dispatchEventWith(Event.CHANGE);
 					}
-					this._onDragEnd.dispatch(this);
+					this.dispatchEventWith(FeathersEventType.END_INTERACTION);
 					return;
 				}
 			}
@@ -1309,7 +1302,7 @@ package feathers.controls
 						this._touchStartY = HELPER_POINT.y;
 						this._touchValue = this.locationToValue(HELPER_POINT);
 						this.isDragging = true;
-						this._onDragStart.dispatch(this);
+						this.dispatchEventWith(FeathersEventType.BEGIN_INTERACTION);
 						if(this._showThumb)
 						{
 							this.adjustPage();
@@ -1364,9 +1357,9 @@ package feathers.controls
 					this.isDragging = false;
 					if(!this.liveDragging)
 					{
-						this._onChange.dispatch(this);
+						this.dispatchEventWith(Event.CHANGE);
 					}
-					this._onDragEnd.dispatch(this);
+					this.dispatchEventWith(FeathersEventType.END_INTERACTION);
 					return;
 				}
 			}
@@ -1383,7 +1376,7 @@ package feathers.controls
 						this._touchStartX = HELPER_POINT.x;
 						this._touchStartY = HELPER_POINT.y;
 						this.isDragging = true;
-						this._onDragStart.dispatch(this);
+						this.dispatchEventWith(FeathersEventType.BEGIN_INTERACTION);
 						return;
 					}
 				}
